@@ -7,19 +7,19 @@ import email
 import imaplib
 import locale
 from locale import atof
+import json
 
 
-# Email credentials
-email_user = ''
-email_pass = ''
+json_file_path= "C:/Users/esteb/Documents/Automatización/MutualFund_Info.json"
+with open(json_file_path, 'r') as file:
+    # Carga los datos JSON del archivo
+    key_info = json.load(file)
+
 
 # Connect to the Gmail server
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
-mail.login(email_user, email_pass)
+mail.login(key_info["email"], key_info["email_code"])
 mail.select('inbox')
-
-# Obtener el primer día de hace dos meses
-#primer_dia_mes = datetime.now().replace(day=1).strftime('%d-%b-%Y')
 
 # Search for emails from a specific sender received since the first day of two months ago
 tipo, data = mail.search(None, '(FROM "extractosbancolombia@extractos.documentosbancolombia.com")')
