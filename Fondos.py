@@ -7,17 +7,25 @@ import email
 import imaplib
 import locale
 from locale import atof
+import json
 
 
-nombre_archivo_excel = 'C:\\Users\\esteb\\Documents\\Automatización\\Fondos de Inversion.xlsx'
+json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
+with open(json_file_path, 'r') as file:
+    # Carga los datos JSON del archivo
+    key_info = json.load(file)
+
+
+
+nombre_archivo_excel = key_info["Path_DataBaseFunds"]
 
 
 # Leer el archivo Excel existente (si existe) o crear un DataFrame vacío si no existe
 df_existente = pd.read_excel(nombre_archivo_excel, index_col=0)  # Asegúrate de que los índices múltiples se mantengan
 df_existente.index = pd.to_datetime(df_existente.index)
 # Email credentials
-email_user = 'estebangomez07042001@gmail.com'
-email_pass = 'qaux zfpx recr fufp'
+email_user = key_info["email"]
+email_pass = key_info["email_code"]
 
 # Connect to the Gmail server
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
@@ -28,10 +36,11 @@ mail.select('inbox')
 primer_dia_mes = datetime.now().replace(day=1).strftime('%d-%b-%Y')
 
 # Search for emails from a specific sender received since the first day of two months ago
-tipo, data = mail.search(None, '(FROM "extractosbancolombia@extractos.documentosbancolombia.com" SINCE "{}")'.format(primer_dia_mes))
+tipo, data = mail.search(None, f'(FROM "{key_info["bank_email"]}")')
+tipo, data = mail.search(None, f'(FROM "{key_info["bank_email"]}" SINCE "{primer_dia_mes}")')
 
-fondos_path = 'C:/Users/esteb/Documents/Automatización/Extractos/Fondos_Bancolombia'
-finanzas_personales_path = 'C:/Users/esteb/Documents/Automatización/Extractos/Finanzas_Bancolombia'
+fondos_path = key_info["Path_MutualFunds"]
+finanzas_personales_path = key_info["Path_PersonalFinance"]
 
 # Make sure the directories exist
 os.makedirs(fondos_path, exist_ok=True)
@@ -71,10 +80,10 @@ mail.logout()
 
 
 # Reemplaza esto con la ruta de la carpeta que contiene los archivos PDF
-carpeta = "C:/Users/esteb/Documents/Automatización/Extractos/Fondos_Bancolombia"
+carpeta = key_info["Path_MutualFunds"]
 
 # Reemplaza esto con la contraseña real del PDF
-password = '1001367767'
+password = key_info["Id"]
 
 # Lista para almacenar el texto de todos los archivos PDF
 textos = []

@@ -10,7 +10,7 @@ from locale import atof
 import json
 
 
-json_file_path= "C:/Users/esteb/Documents/Automatización/MutualFund_Info.json"
+json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
 with open(json_file_path, 'r') as file:
     # Carga los datos JSON del archivo
     key_info = json.load(file)
@@ -22,10 +22,10 @@ mail.login(key_info["email"], key_info["email_code"])
 mail.select('inbox')
 
 # Search for emails from a specific sender received since the first day of two months ago
-tipo, data = mail.search(None, '(FROM "extractosbancolombia@extractos.documentosbancolombia.com")')
+tipo, data = mail.search(None, f'(FROM "{key_info["bank_email"]}")')
 
-fondos_path = 'C:/Users/esteb/Documents/Automatización/Extractos/Fondos_Bancolombia'
-finanzas_personales_path = 'C:/Users/esteb/Documents/Automatización/Extractos/Finanzas_Bancolombia'
+fondos_path = key_info["Path_MutualFunds"]
+finanzas_personales_path = key_info["Path_PersonalFinance"]
 
 # Make sure the directories exist
 os.makedirs(fondos_path, exist_ok=True)
@@ -65,10 +65,10 @@ mail.logout()
 
 
 # Reemplaza esto con la ruta de la carpeta que contiene los archivos PDF
-carpeta = "C:/Users/esteb/Documents/Automatización/Extractos/Fondos_Bancolombia"
+carpeta = key_info["Path_MutualFunds"]
 
 # Reemplaza esto con la contraseña real del PDF
-password = '1001367767'
+password = key_info["Id"]
 
 # Lista para almacenar el texto de todos los archivos PDF
 textos = []
@@ -181,4 +181,4 @@ df_resultados_multi_index= df_resultados_multi_index.sort_index()
 columnas_para_convertir = ["Valor de la unidad","Saldo Anterior", "Adiciones","Retiros","Rendimientos Netos","Retención","Saldo Final","Rentabilidad"]
 df_resultados_multi_index[columnas_para_convertir] = df_resultados_multi_index[columnas_para_convertir].apply(pd.to_numeric, errors='coerce')
 
-df_resultados_multi_index.to_excel("C:\\Users\\esteb\\Documents\\Automatización\\Fondos de Inversion.xlsx", index=True)
+df_resultados_multi_index.to_excel(key_info["Path_DataBaseFunds"], index=True)
