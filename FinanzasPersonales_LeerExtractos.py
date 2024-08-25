@@ -7,11 +7,19 @@ import email
 import imaplib
 import locale
 from locale import atof
+import json
+
+json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
+with open(json_file_path, 'r') as file:
+    # Carga los datos JSON del archivo
+    key_info = json.load(file)
+
+
 # Reemplaza esto con la ruta de la carpeta que contiene los archivos PDF
-carpeta = "C:/Users/esteb/Documents/Automatización/Extractos/Finanzas_Bancolombia"
+carpeta = key_info["Path_PersonalFinance"]
 
 # Reemplaza esto con la contraseña real del PDF
-password = '1001367767'
+password = key_info["Id"]
 
 # Lista para almacenar el texto de todos los archivos PDF
 textos = []
@@ -135,6 +143,6 @@ def eliminar_numeros_final(texto):
 df_transacciones_totales['Descripción'] = df_transacciones_totales['Descripción'].apply(eliminar_numeros_final)
 df_transacciones_totales['Descripción'] = df_transacciones_totales['Descripción'].apply(eliminar_numeros_y_puntos_si_abono)
 
-nombre_archivo = "C:\\Users\\esteb\\Documents\\Automatización\\PruebaTransacciones.xlsx"
+nombre_archivo = key_info["Path_DataBasePersonalFinance"]
 df_transacciones_totales.to_excel(nombre_archivo, index=True, engine='openpyxl')
 

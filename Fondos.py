@@ -8,7 +8,7 @@ import imaplib
 import locale
 from locale import atof
 import json
-
+from dateutil.relativedelta import relativedelta
 
 json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
 with open(json_file_path, 'r') as file:
@@ -33,7 +33,9 @@ mail.login(email_user, email_pass)
 mail.select('inbox')
 
 # Obtener el primer día de hace dos meses
-primer_dia_mes = datetime.now().replace(day=1).strftime('%d-%b-%Y')
+hoy = datetime.now()
+fecha_dos_meses_atras = hoy - relativedelta(months=2)
+primer_dia_mes = fecha_dos_meses_atras.replace(day=1).strftime('%d-%b-%Y')
 
 # Search for emails from a specific sender received since the first day of two months ago
 tipo, data = mail.search(None, f'(FROM "{key_info["bank_email"]}")')
@@ -200,3 +202,6 @@ df_resultados_multi_index[columnas_para_convertir] = df_resultados_multi_index[c
 
 df_resultados_combinados = pd.concat([df_existente, df_resultados_multi_index], axis= 0)
 df_resultados_combinados.to_excel(nombre_archivo_excel, index=True)
+
+
+
