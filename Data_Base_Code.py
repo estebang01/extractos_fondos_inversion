@@ -9,12 +9,31 @@ import locale
 from locale import atof
 import json
 
+# Configuración del locale
+locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
+
+# Función para convertir valores con el signo '-' al final
+def convertir_a_numero(valor):
+    if isinstance(valor, str):
+        # Elimina cualquier espacio en blanco alrededor
+        valor = valor.strip()
+        
+        # Verifica si el signo '-' está al final y lo mueve al principio
+        if valor.endswith('-'):
+            valor = '-' + valor[:-1]
+        
+        try:
+            # Intenta convertir a número
+            return locale.atof(valor)
+        except ValueError:
+            # Si la conversión falla, retorna el valor original
+            return valor
+    return valor
 
 json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
 with open(json_file_path, 'r') as file:
     # Carga los datos JSON del archivo
     key_info = json.load(file)
-
 
 # Connect to the Gmail server
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
@@ -30,8 +49,8 @@ finanzas_personales_path = key_info["Path_PersonalFinance"]
 # Make sure the directories exist
 os.makedirs(fondos_path, exist_ok=True)
 os.makedirs(finanzas_personales_path, exist_ok=True)
-# Resto del código para procesar los correos y descargar los archivos...
 
+# Procesar correos y descargar los archivos
 for num in data[0].split():
     typ, msg_data = mail.fetch(num, '(RFC822)')
     for response_part in msg_data:
@@ -63,11 +82,8 @@ for num in data[0].split():
 mail.close()
 mail.logout()
 
-
-# Reemplaza esto con la ruta de la carpeta que contiene los archivos PDF
+# Procesar los archivos PDF en la carpeta especificada
 carpeta = key_info["Path_MutualFunds"]
-
-# Reemplaza esto con la contraseña real del PDF
 password = key_info["Id"]
 
 # Lista para almacenar el texto de todos los archivos PDF
@@ -100,8 +116,9 @@ for archivo in os.listdir(carpeta):
                     print(f"Contraseña incorrecta o imposible desencriptar el PDF: {archivo}")
             else:
                 print(f"El PDF no está encriptado: {archivo}")
+
 # Supongamos que esta es tu lista de textos (cada elemento es el contenido de un archivo PDF)
-lista_textos = textos  # Reemplaza esto con tu lista de textos
+lista_textos = textos
 
 # Crear un DataFrame vacío para almacenar los resultados
 df_resultados = pd.DataFrame(columns=["Fondo de Inversión", "Número", "Valor de la unidad", "Saldo Anterior", "Adiciones", "Retiros", "Rendimientos Netos", "Retención", "Saldo Final"])
@@ -112,23 +129,23 @@ patron_valor_unidad = re.compile(r'Valor Unidad al Final: ([\d\.,]+)')
 patron_saldoanterior = re.compile(r'SALDO ANTERIOR ADICIONES RETIROS\nVALOR EN PESOS VALOR EN UNIDADES VALOR EN PESOS VALOR EN PESOS\n(.+?)\n')
 patron_rendimientos = re.compile(r'REND. NETOS RETENCIÓN NUEVO SALDO\nVALOR EN PESOS VALOR EN PESOS VALOR EN PESOS VALOR EN UNIDADES\n(.+?)\n')
 patron_fecha = re.compile(r'Hasta: (\d+)')
-patron_rentabilidad = re.compile(r'Rentabilidad Periodo: (\d+,\d+)')
+patron_rentabilidad = re.compile(r'Rentabilidad Periodo:\s*([\d\.,\-+% ]+)\s*%')
 
 # Procesar cada texto en la lista
 for texto in lista_textos:
     numero = patron_numero.search(texto).group(1)
     valor_unidad = patron_valor_unidad.search(texto).group(1)
-    rendimientoss= patron_rendimientos.search(texto).group(1)
+    rendimientoss = patron_rendimientos.search(texto).group(1)
     resultado_fecha = patron_fecha.search(texto).group(1)
     resultado_rentabilidad = patron_rentabilidad.search(texto).group(1)
 
-# Verifica si el texto contiene "Pag. 2"
+    # Verifica si el texto contiene "Pag. 2"
     if "Pág. 2" in texto:
-    # Para documentos de dos páginas, toma la segunda coincidencia
+        # Para documentos de dos páginas, toma la segunda coincidencia
         todas_coincidencias = patron_saldoanterior.findall(texto)
         saldoanterior = todas_coincidencias[1]
     else:
-    # Para documentos de una página, toma la primera coincidencia
+        # Para documentos de una página, toma la primera coincidencia
         saldoanterior = patron_saldoanterior.search(texto).group(1) if patron_saldoanterior.search(texto) else "No encontrado"
 
     if numero == '252000001274':
@@ -137,48 +154,53 @@ for texto in lista_textos:
         fondo_inversion = "Fidurenta"
     elif numero == '342000006519':
         fondo_inversion = "Fiducuenta"
-    elif  numero == "252000011589" :
+    elif numero == "252000011589":
         fondo_inversion = "Renta Fija Plazo"
     else:
         fondo_inversion = "Otro Fondo"
     
-# Saldo Anterior
-    partes_saldoanterior=saldoanterior.split()
-    saldo_anterior= partes_saldoanterior[0]
-    adiciones=partes_saldoanterior[2]
-    retiros= partes_saldoanterior[-1]
+    # Saldo Anterior
+    partes_saldoanterior = saldoanterior.split()
+    saldo_anterior = partes_saldoanterior[0]
+    adiciones = partes_saldoanterior[2]
+    retiros = partes_saldoanterior[-1]
 
-#Rendimientos
-    partes_rendimientos= rendimientoss.split()
-    rendimientos= partes_rendimientos[0]
-    retencion=partes_rendimientos[1]
-    saldofinal= partes_rendimientos[2]
+    # Rendimientos
+    partes_rendimientos = rendimientoss.split()
+    rendimientos = partes_rendimientos[0]
+    retencion = partes_rendimientos[1]
+    saldofinal = partes_rendimientos[2]
 
     fecha = datetime.strptime(resultado_fecha, "%Y%m%d")
 
-# Agregar la información extraída al DataFrame
-    nueva_fila = pd.DataFrame({"Fondo de Inversión": fondo_inversion, "Número": numero, "Valor de la unidad": valor_unidad,
-                            "Saldo Anterior": saldo_anterior,"Adiciones": adiciones,"Retiros": retiros, "Rendimientos Netos":rendimientos,
-                            "Retención": retencion,"Saldo Final": saldofinal,"Rentabilidad": resultado_rentabilidad},index=[fecha])
+    # Agregar la información extraída al DataFrame
+    nueva_fila = pd.DataFrame({
+        "Fondo de Inversión": fondo_inversion,
+        "Número": numero,
+        "Valor de la unidad": valor_unidad,
+        "Saldo Anterior": saldo_anterior,
+        "Adiciones": adiciones,
+        "Retiros": retiros,
+        "Rendimientos Netos": rendimientos,
+        "Retención": retencion,
+        "Saldo Final": saldofinal,
+        "Rentabilidad": resultado_rentabilidad
+    }, index=[fecha])
     df_resultados = pd.concat([df_resultados, nueva_fila], ignore_index=False)
-    
-    
-    
-    
-locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
-columnas_para_convertir = df_resultados.columns[-8:]
 
 # Aplicar la conversión a las columnas seleccionadas
-for columna in columnas_para_convertir:
-    # Eliminar puntos y reemplazar comas para convertir a formato decimal estándar
-    df_resultados[columna] = df_resultados[columna].apply(lambda x: atof(x) if isinstance(x, str) else x)
-df_resultados_reset = df_resultados.reset_index()
-df_resultados_reset = df_resultados_reset.rename(columns={"index":"Fecha"})
+columnas_para_convertir = ["Valor de la unidad", "Saldo Anterior", "Adiciones", "Retiros", "Rendimientos Netos", "Retención", "Saldo Final", "Rentabilidad"]
 
-# Establecer la fecha y el 'Fondo de Inversión' como índices múltiples
+for columna in columnas_para_convertir:
+    df_resultados[columna] = df_resultados[columna].apply(convertir_a_numero)
+
+# Restablecer el índice para manipulación adicional
+df_resultados_reset = df_resultados.reset_index()
+df_resultados_reset = df_resultados_reset.rename(columns={"index": "Fecha"})
+
 df_resultados_multi_index = df_resultados_reset.set_index(['Fecha'])
 df_resultados_multi_index= df_resultados_multi_index.sort_index()
-columnas_para_convertir = ["Valor de la unidad","Saldo Anterior", "Adiciones","Retiros","Rendimientos Netos","Retención","Saldo Final","Rentabilidad"]
+columnas_para_convertir = ["Valor de la unidad","Saldo Anterior", "Adiciones","Retiros","Rendimientos Netos","Retención","Saldo Final"]
 df_resultados_multi_index[columnas_para_convertir] = df_resultados_multi_index[columnas_para_convertir].apply(pd.to_numeric, errors='coerce')
 
 df_resultados_multi_index.to_excel(key_info["Path_DataBaseFunds"], index=True)

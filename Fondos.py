@@ -10,6 +10,28 @@ from locale import atof
 import json
 from dateutil.relativedelta import relativedelta
 
+
+# Configuración del locale
+locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
+
+# Función para convertir valores con el signo '-' al final
+def convertir_a_numero(valor):
+    if isinstance(valor, str):
+        # Elimina cualquier espacio en blanco alrededor
+        valor = valor.strip()
+        
+        # Verifica si el signo '-' está al final y lo mueve al principio
+        if valor.endswith('-'):
+            valor = '-' + valor[:-1]
+        
+        try:
+            # Intenta convertir a número
+            return locale.atof(valor)
+        except ValueError:
+            # Si la conversión falla, retorna el valor original
+            return valor
+    return valor
+
 json_file_path= "C:/Users/esteb/Documents/Automatizacion/MutualFund_Info.json"
 with open(json_file_path, 'r') as file:
     # Carga los datos JSON del archivo
@@ -129,7 +151,7 @@ patron_valor_unidad = re.compile(r'Valor Unidad al Final: ([\d\.,]+)')
 patron_saldoanterior = re.compile(r'SALDO ANTERIOR ADICIONES RETIROS\nVALOR EN PESOS VALOR EN UNIDADES VALOR EN PESOS VALOR EN PESOS\n(.+?)\n')
 patron_rendimientos = re.compile(r'REND. NETOS RETENCIÓN NUEVO SALDO\nVALOR EN PESOS VALOR EN PESOS VALOR EN PESOS VALOR EN UNIDADES\n(.+?)\n')
 patron_fecha = re.compile(r'Hasta: (\d+)')
-patron_rentabilidad = re.compile(r'Rentabilidad Periodo: (\d+,\d+)')
+patron_rentabilidad = re.compile(r'Rentabilidad Periodo:\s*([\d\.,\-+% ]+)\s*%')
 
 # Procesar cada texto en la lista
 for texto in lista_textos:
@@ -184,19 +206,21 @@ for texto in lista_textos:
     
     
 locale.setlocale(locale.LC_NUMERIC, 'es_ES.UTF-8')
-columnas_para_convertir = df_resultados.columns[-8:]
+# Aplicar la conversión a las columnas seleccionadas
+columnas_para_convertir = ["Valor de la unidad", "Saldo Anterior", "Adiciones", "Retiros", "Rendimientos Netos", "Retención", "Saldo Final", "Rentabilidad"]
 
 # Aplicar la conversión a las columnas seleccionadas
 for columna in columnas_para_convertir:
     # Eliminar puntos y reemplazar comas para convertir a formato decimal estándar
-    df_resultados[columna] = df_resultados[columna].apply(lambda x: atof(x) if isinstance(x, str) else x)
+    df_resultados[columna] = df_resultados[columna].apply(convertir_a_numero)
 df_resultados_reset = df_resultados.reset_index()
 df_resultados_reset = df_resultados_reset.rename(columns={"index":"Fecha"})
 
 # Establecer la fecha y el 'Fondo de Inversión' como índices múltiples
 df_resultados_multi_index = df_resultados_reset.set_index('Fecha')
 df_resultados_multi_index= df_resultados_multi_index.sort_index()
-columnas_para_convertir = ["Valor de la unidad","Saldo Anterior", "Adiciones","Retiros","Rendimientos Netos","Retención","Saldo Final","Rentabilidad"]
+
+columnas_para_convertir = ["Valor de la unidad","Saldo Anterior", "Adiciones","Retiros","Rendimientos Netos","Retención","Saldo Final"]
 df_resultados_multi_index[columnas_para_convertir] = df_resultados_multi_index[columnas_para_convertir].apply(pd.to_numeric, errors='coerce')
 
 
