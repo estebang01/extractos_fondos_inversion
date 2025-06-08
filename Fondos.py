@@ -56,7 +56,7 @@ mail.select('inbox')
 
 # Obtener el primer día de hace dos meses
 hoy = datetime.now()
-fecha_dos_meses_atras = hoy - relativedelta(months=2)
+fecha_dos_meses_atras = hoy - relativedelta(months=5)
 primer_dia_mes = fecha_dos_meses_atras.replace(day=1).strftime('%d-%b-%Y')
 
 # Search for emails from a specific sender received since the first day of two months ago
